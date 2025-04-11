@@ -5,35 +5,25 @@
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include "gpio_driver.h"
+
 
 MODULE_LICENSE("GPL"); // has to be specified to allow using GPL-licensed code in kernel
 MODULE_AUTHOR("Nemesis"); // this is my gaming alias
 MODULE_DESCRIPTION("A module that does X on RPi3B+"); // module description has to be clear and meme-free
 MODULE_VERSION("1.0.0"); // module version based on development
 
+#define DRIVER_NAME "_gpio"
+
 /* all function prototypes */
 static int __init gpioDriv_init(void);
 static void __exit gpioDriv_exit(void);
-
-#define NUM_OF_ENTRIES  5 // max num of devices this driver is able to operate
-
-struct GPIO 
-{
-    u32 buffSize;
-    void* __iomem GPSEL;
-    void* __iomem GPSET;
-    void* __iomem GPCLR;
-    u32 permissions;
-    u32 SEL_MASK;
-    u32 SET_MASK;
-    u32 CLR_MASK;
-    u32 mode;
-};
 
 struct prv_data_device
 {
     struct cdev _cdev;
     struct device* _device;
+    struct GPIO *gpio;
 };
 
 struct prv_data_driver 
@@ -43,12 +33,57 @@ struct prv_data_driver
     int numOfEntries;
 };  
 
+static int gpio_open(struct inode *inode, struct file *file) {
+    struct prv_data_device *priv = container_of(inode->i_cdev, struct prv_data_device, cdev);
+    file->private_data = priv;
+    return 0;
+}
+
+static ssize_t gpio_write(struct file *file, const char __user *buf, size_t len, loff_t *off) {
+    struct prv_data_device *priv = file->private_data;
+    u32 val;
+    ssize_t res;
+
+    if ((priv->gpio->permissions == PERM_WO) || (priv->gpio->permissions == PERM_RW))
+    {
+        if (copy_from_user(&val, buf, sizeof(val)))
+            return -EFAULT;
+
+        if (val)
+            iowrite32(1 << priv->gpio->pin_number, priv->gpio->GPSET);
+        else
+            iowrite32(1 << priv->gpio->pin_number, priv->gpio->GPCLR);
+
+        res = sizeof(val);
+    }
+    else /* read only */
+    {
+        res = 0;
+        printk("Device has Read-only permission!\n");
+    }
+
+    return res;
+}
+
+static const struct file_operations gpio_fops = {
+    .owner = THIS_MODULE,
+    .open = gpio_open,
+    .write = gpio_write,
+};
+
 int probeCBF (struct platform_device* platResource)
 {
     printk("Device Detected! \n");
     struct GPIO* _lc_gpio = (struct GPIO*) platResource->dev.platform_data;
     _lc_gpio->allocatedMem = kzalloc(_lc_gpio->buffSize, GFP_KERNEL);
 
+    _lc_gpio->GPSEL = ioremap(_lc_gpio->GPSEL, GPIO_SIZE);
+    _lc_gpio->GPSET = ioremap(_lc_gpio->GPSET, GPIO_SIZE);
+    _lc_gpio->GPCLR = ioremap(_lc_gpio->GPCLR, GPIO_SIZE);
+    platResource->dev.devt
+    // cdev_init(&_dev->_cdev, &gpio_fops);
+    // cdev_add();
+    // device_create(class, NULL, dev_t, NULL, "gpio%d", pdev->id);
     /**
      * @brief 
      * set GPIOAFSEL mode
@@ -63,8 +98,10 @@ int probeCBF (struct platform_device* platResource)
 int removeCBF (struct platform_device* platResource)
 {
     printk("Device Removed! \n");
-    struct GPIO* _lc_gpio = (struct GPIO*) platResource->dev.platform_data;
+    struct GPIO* _lc_gpio = (struct GPIO*) dev_get_platdata(&platResource->dev); // pretty much the same as platResource->dev.platform_data
     kfree(_lc_gpio->allocatedMem);
+    // device_destroy(class, priv->dev_t);
+    // cdev_del(cdev);
     return 0;
 }
 
@@ -73,7 +110,7 @@ struct platform_driver _platDriver =
     .probe = probeCBF,
     .remove = removeCBF,
     .driver = {
-        .name = "_gpio"
+        .name = DRIVER_NAME
     }
 };
 
@@ -81,7 +118,7 @@ struct prv_data_driver _prvtDrvData;
 
 static int __init gpioDriv_init(void)
 {
-    alloc_chrdev_region(&_prvtDrvData.devNum, 0, NUM_OF_ENTRIES, "device");
+    alloc_chrdev_region(&_prvtDrvData.devNum, 0, NUM_OF_ENTRIES, DRIVER_NAME);
     _prvtDrvData._class = class_create("device");
     platform_driver_register(&_platDriver);
     return 0;

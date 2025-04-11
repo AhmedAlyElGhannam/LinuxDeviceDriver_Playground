@@ -4,6 +4,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
+#include "gpio_driver.h"
 
 MODULE_LICENSE("GPL"); // has to be specified to allow using GPL-licensed code in kernel
 MODULE_AUTHOR("Nemesis"); // this is my gaming alias
@@ -14,41 +15,23 @@ MODULE_VERSION("1.0.0"); // module version based on development
 static int __init gpioDev_init(void);
 static void __exit gpioDev_exit(void);
 
-#define GPIO_BASE
-#define GPIO_GPFSEL
-#define GPIO_GPSET
-#define GPIO_GPCLR
-#define NUM_OF_GPIOS
-
-struct GPIO 
-{
-    u32 buffSize;
-    void* __iomem GPSEL;
-    void* __iomem GPSET;
-    void* __iomem GPCLR;
-    u32 permissions;
-    u32 SEL_MASK;
-    u32 SET_MASK;
-    u32 CLR_MASK;
-    u32 mode;
-    void* allocatedMem;
-};
-
 struct GPIO _gpios[NUM_OF_GPIOS] = 
 {
     [0] = {
         .buffSize = 50,
-        .GPSEL = (void* __iomem)(GPIO_BASE + GPIO_GPFSEL),
-        .GPSET = (void* __iomem)(GPIO_BASE + GPIO_GPFSEL),
-        .GPCLR = (void* __iomem)(GPIO_BASE + GPIO_GPFSEL),
-        .permissions = 1
+        .GPSEL = (void* __iomem)(GPIO_GPFSEL0),
+        .GPSET = (void* __iomem)(GPIO_GPSET0),
+        .GPCLR = (void* __iomem)(GPIO_GPCLR0),
+        .permissions = PERM_RW,
+        .pin_num = 21
     },
     [1] = {
         .buffSize = 50,
-        .GPSEL = (void* __iomem)(GPIO_BASE + GPIO_GPFSEL),
-        .GPSET = (void* __iomem)(GPIO_BASE + GPIO_GPFSEL),
-        .GPCLR = (void* __iomem)(GPIO_BASE + GPIO_GPFSEL),
-        .permissions = 2
+        .GPSEL = (void* __iomem)(GPIO_GPFSEL0),
+        .GPSET = (void* __iomem)(GPIO_GPSET0),
+        .GPCLR = (void* __iomem)(GPIO_GPCLR0),
+        .permissions = PERM_RW,
+        .pin_num = 26
     }
 };
 
