@@ -59,6 +59,12 @@
   "files.associations": {
     "module.h": "c",
     "platform_device.h": "c",
-    "cdev.h": "c"
-  }
+    "cdev.h": "c",
+    "bitset": "c",
+    "chrono": "c",
+    "algorithm": "c",
+    "__bit_reference": "c",
+    "unordered_map": "c"
+  },
+  "C_Cpp.errorSquiggles": "disabled"
 }

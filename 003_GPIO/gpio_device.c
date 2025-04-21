@@ -10,17 +10,20 @@
 
 MODULE_LICENSE("GPL"); // has to be specified to allow using GPL-licensed code in kernel
 MODULE_AUTHOR("Nemesis"); // this is my gaming alias
-MODULE_DESCRIPTION("A module that does X on RPi3B+"); // module description has to be clear and meme-free
+MODULE_DESCRIPTION("Platform device for LEDs connected to GPIO (Raspberry Pi 3B+)"); // module description has to be clear and meme-free
 MODULE_VERSION("1.0.0"); // module version based on development
 
 /* all function prototypes */
 static int __init gpioDev_init(void);
 static void __exit gpioDev_exit(void);
+void releaseCBF(struct device* dev);
+
+struct platform_private_device _platform_private_device[NUM_OF_GPIOS];
 
 struct GPIO _gpios[NUM_OF_GPIOS] = 
 {
     [0] = {
-        .buffSize = 50,
+        .buffSize = 15,
         .GPSEL = (void* __iomem)(GPIO_GPFSEL0),
         .GPSET = (void* __iomem)(GPIO_GPSET0),
         .GPCLR = (void* __iomem)(GPIO_GPCLR0),
@@ -28,7 +31,7 @@ struct GPIO _gpios[NUM_OF_GPIOS] =
         .pin_num = 21
     },
     [1] = {
-        .buffSize = 50,
+        .buffSize = 15,
         .GPSEL = (void* __iomem)(GPIO_GPFSEL0),
         .GPSET = (void* __iomem)(GPIO_GPSET0),
         .GPCLR = (void* __iomem)(GPIO_GPCLR0),
@@ -37,18 +40,10 @@ struct GPIO _gpios[NUM_OF_GPIOS] =
     }
 };
 
-void releaseCBF(struct device* dev)
-{
-
-}
-
-struct platform_private_device _platform_private_device[NUM_OF_GPIOS];
-
-
 struct platform_device _platdevice[NUM_OF_GPIOS] = 
 {
     [0] = {
-        .name = "fady",
+        .name = "LED_AQUA",
         .id = 0,
         .dev = {
             .driver_data = (struct GPIO*)&_gpios[0],
@@ -57,7 +52,7 @@ struct platform_device _platdevice[NUM_OF_GPIOS] =
         }
     },
     [1] = {
-        .name = "ahmed",
+        .name = "LED_CRIMSON",
         .id = 1,
         .dev = {
             .driver_data = (struct GPIO*)&_gpios[1],
@@ -67,15 +62,26 @@ struct platform_device _platdevice[NUM_OF_GPIOS] =
     }
 };
 
+void releaseCBF(struct device* dev)
+{
+
+}
+
 static int __init gpioDev_init(void)
 {
     u32 iter;
+    u16 res = 0;
     for (iter = 0; iter < NUM_OF_GPIOS; iter++)
     {
-        platform_device_register(&_platdevice[iter]);
+        res = platform_device_register(&_platdevice[iter]);
+        if (res < 0)
+        {
+            printk("Failed to register plaform device number %d\n", iter);
+        }
     }
 
-    return 0;
+
+    return res;
 }
 
 static void __exit gpioDev_exit(void)

@@ -16,7 +16,7 @@
 
 #define NUM_OF_ENTRIES  5 // max num of devices this driver is able to operate
 
-#define DRIVER_NAME "_gpio"
+#define DRIVER_NAME "_led_gpio"
 
 
 struct GPIO 
@@ -26,10 +26,6 @@ struct GPIO
     void* __iomem GPSET;
     void* __iomem GPCLR;
     u32 permissions;
-    // u32 SEL_MASK;
-    // u32 SET_MASK;
-    // u32 CLR_MASK;
-    // u32 mode;
     u32 pin_num;
     void* allocatedMem;
 };
@@ -37,7 +33,7 @@ struct GPIO
 struct platform_private_device 
 {
     struct cdev _cdev;
-    struct device _device;
+    struct device* _device;
 };
 
 #endif
