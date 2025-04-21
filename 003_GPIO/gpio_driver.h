@@ -16,6 +16,8 @@
 
 #define NUM_OF_ENTRIES  5 // max num of devices this driver is able to operate
 
+#define DRIVER_NAME "_gpio"
+
 
 struct GPIO 
 {
@@ -30,6 +32,12 @@ struct GPIO
     // u32 mode;
     u32 pin_num;
     void* allocatedMem;
+};
+
+struct platform_private_device 
+{
+    struct cdev _cdev;
+    struct device _device;
 };
 
 #endif

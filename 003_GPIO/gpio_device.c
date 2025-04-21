@@ -4,6 +4,8 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
+#include <linux/uaccess.h>
+#include <linux/io.h>
 #include "gpio_driver.h"
 
 MODULE_LICENSE("GPL"); // has to be specified to allow using GPL-licensed code in kernel
@@ -40,21 +42,26 @@ void releaseCBF(struct device* dev)
 
 }
 
+struct platform_private_device _platform_private_device[NUM_OF_GPIOS];
+
+
 struct platform_device _platdevice[NUM_OF_GPIOS] = 
 {
     [0] = {
-        .name = "gpio",
+        .name = "fady",
         .id = 0,
         .dev = {
-            .platform_data = (struct GPIO*)&_gpios[0],
+            .driver_data = (struct GPIO*)&_gpios[0],
+            .platform_data = (struct platform_private_device*)&_platform_private_device[0],
             .release = releaseCBF
         }
     },
     [1] = {
-        .name = "gpio",
+        .name = "ahmed",
         .id = 1,
         .dev = {
-            .platform_data = (struct GPIO*)&_gpios[1],
+            .driver_data = (struct GPIO*)&_gpios[1],
+            .platform_data = (struct platform_private_device*)&_platform_private_device[1],
             .release = releaseCBF
         }
     }
