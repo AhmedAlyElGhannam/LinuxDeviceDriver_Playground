@@ -64,7 +64,8 @@
     "chrono": "c",
     "algorithm": "c",
     "__bit_reference": "c",
-    "unordered_map": "c"
+    "unordered_map": "c",
+    "uaccess.h": "c"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

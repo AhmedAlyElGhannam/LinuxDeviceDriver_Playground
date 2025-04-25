@@ -18,68 +18,43 @@ static int __init gpioDev_init(void);
 static void __exit gpioDev_exit(void);
 void releaseCBF(struct device* dev);
 
-struct platform_private_device _platform_private_device[NUM_OF_GPIOS];
-
-struct GPIO _gpios[NUM_OF_GPIOS] = 
-{
-    [0] = {
-        .buffSize = 15,
-        .GPSEL = (void* __iomem)(GPIO_GPFSEL0),
-        .GPSET = (void* __iomem)(GPIO_GPSET0),
-        .GPCLR = (void* __iomem)(GPIO_GPCLR0),
-        .permissions = PERM_RW,
-        .pin_num = 21
-    },
-    [1] = {
-        .buffSize = 15,
-        .GPSEL = (void* __iomem)(GPIO_GPFSEL0),
-        .GPSET = (void* __iomem)(GPIO_GPSET0),
-        .GPCLR = (void* __iomem)(GPIO_GPCLR0),
-        .permissions = PERM_RW,
-        .pin_num = 26
-    }
-};
-
+/* defining NUM_OF_GPIOS instances from platform device */
 struct platform_device _platdevice[NUM_OF_GPIOS] = 
 {
     [0] = {
-        .name = "LED_AQUA",
-        .id = 0,
-        .dev = {
-            .driver_data = (struct GPIO*)&_gpios[0],
-            .platform_data = (struct platform_private_device*)&_platform_private_device[0],
-            .release = releaseCBF
-        }
+        .name = "LED_AQUA", /* device name */
+        .id = 0, /* device id */
+        .dev = { .release = releaseCBF } /* device's release function */
     },
     [1] = {
-        .name = "LED_CRIMSON",
-        .id = 1,
-        .dev = {
-            .driver_data = (struct GPIO*)&_gpios[1],
-            .platform_data = (struct platform_private_device*)&_platform_private_device[1],
-            .release = releaseCBF
-        }
+        .name = "LED_CRIMSON", /* device name */
+        .id = 1, /* device id */
+        .dev =  { .release = releaseCBF } /* device's release function */
     }
 };
 
 void releaseCBF(struct device* dev)
 {
-
+    /* no need to do anything here (for now) */
 }
 
 static int __init gpioDev_init(void)
 {
     u32 iter;
     u16 res = 0;
+
+    /* loop over devices and register them one by one */
     for (iter = 0; iter < NUM_OF_GPIOS; iter++)
     {
         res = platform_device_register(&_platdevice[iter]);
+        
+        /* if could not register device => break + log err */
         if (res < 0)
         {
             printk("Failed to register plaform device number %d\n", iter);
+            break;
         }
     }
-
 
     return res;
 }
@@ -87,6 +62,8 @@ static int __init gpioDev_init(void)
 static void __exit gpioDev_exit(void)
 {
     u32 iter;
+
+    /* loop over devices and unregister them one by one */
     for (iter = 0; iter < NUM_OF_GPIOS; iter++)
     {
         platform_device_unregister(&_platdevice[iter]);
