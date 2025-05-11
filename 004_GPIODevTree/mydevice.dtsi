@@ -1,0 +1,8 @@
+/{
+    ledgpio: ledgpio@3F200000 {
+        compatible = "led-aqua";
+        reg = <0x3F200000 0xB4>;
+        status = "okay";
+        uc3,buffer = <50>;
+    };
+};

@@ -8,6 +8,8 @@
 #include <linux/uaccess.h>
 #include <linux/io.h>
 #include <linux/mod_devicetable.h>
+#include <linux/property.h>
+#include <linux/of.h>
 #include "gpio_driver.h"
 
 MODULE_LICENSE("GPL"); // has to be specified to allow using GPL-licensed code in kernel
@@ -27,8 +29,6 @@ int removeCBF(struct platform_device* platResource);
 /* defining pointers to private device && private driver data */
 static struct platform_driver_private_data* _prvtDrvData;
 // static struct platform_device_private_data* _prvDevData;
-
-struct 
 
 /* defining an instance of file operations provided by this driver */
 static const struct file_operations gpio_fops = 
@@ -167,139 +167,38 @@ out:
 /* probing callback function */
 int probeCBF (struct platform_device* platResource)
 {
-    int res = 0;
-    uint32_t val;
-    uint32_t mask_shift;
-    struct GPIO* _lc_gpio;
-
-    /* probe logging */
-    printk("Device Detected! \n");
-
-    /* allocating memory for platform device private data */
-    struct platform_device_private_data* _prvDevData = (struct platform_device_private_data*) devm_kzalloc(&_prvDevData, sizeof(struct platform_device_private_data), GFP_KERNEL);
-    if (_prvDevData == NULL)
-    {
-        /* if no memory -> return */
-        res = -ENOMEM;
-        goto out;
-    }
-
-    /* set private device data into platform device's private data field */
-    platform_set_drvdata(platResource, _prvDevData);
-
-    /* get a pointer to device's gpio field */
-    _lc_gpio = (struct GPIO*) (&_prvDevData->_gpio);
-    
-    /* NOTE: this part is ALSO under construction */
-    /* move to open() + use it in write + free it in close() */
-    // /* setting buffer size */
-    // _lc_gpio->buffSize = GPIO_BUF_SIZE;
-
-    // /* allocating memory for GPIO buffer */
-    // _lc_gpio->allocatedMem = kzalloc(_lc_gpio->buffSize, GFP_KERNEL);
-    // if (!(_lc_gpio->allocatedMem))
-    // {
-    //     res = -ENOMEM;
-    //     goto out;
-    // }
-    // else {}
-
-    /* setting up gpio addresses */
-    _lc_gpio->GPSEL = _prvtDrvData->gpio_base + GPIO_GPFSEL2;
-    _lc_gpio->GPSET = _prvtDrvData->gpio_base + GPIO_GPSET0;
-    _lc_gpio->GPCLR = _prvtDrvData->gpio_base + GPIO_GPCLR0;
-
-    /* set pin number based on device id */
-    switch (platResource->id)
-    {
-        case 0:
-            /* set pin num in private data */
-            _prvDevData->pin_num = LED_AQUA_PIN;
-            /* mask and operation changes based on pin */
-            mask_shift = 3;
-
-        break;
-
-        case 1:
-            /* set pin num in private data */
-            _prvDevData->pin_num = LED_CRIMSON_PIN;
-            /* mask and operation changes based on pin */
-            mask_shift = 18;
-        break;
-
-        default:
-            res = -EINVAL;
-        break;
-    }
-
-    /* set up gpio pin modes */
-    val = ioread32(_lc_gpio->GPSEL);
-
-    /* clear GPIO pin fsel bits then make it output */
-    val &= ~(0b111 << mask_shift); 
-    val |= (0b001 << mask_shift);
-        
-    /* write modified value in register */
-    iowrite32(val, _lc_gpio->GPSEL);
-
-    /* char device fields getting filled (aka filling in cdev instance) */
-    cdev_init(&_prvDevData->_cdev, &gpio_fops); /* fops */
-
-    res = cdev_add(&_prvDevData->_cdev, _prvtDrvData->devNum + platResource->id, 1); /* major + base minor (id is added to shift minor num from base) && num of devices (one at a time) */
-    if (res < 0)
-    {
-        goto out;
-    }
-    else {}
-
-    _prvDevData->_device = device_create(_prvtDrvData->_class, NULL, _prvtDrvData->devNum + platResource->id, NULL, "gpio-led%d", platResource->id);
-    if (&_prvDevData->_device == NULL)
-    {
-        res = -ENOMEM;
-        goto err;
-    }
-    else {}
-
-
-    /* log successful exit of probe */
-    printk("Device Probing Successful!\n");
-    goto out;
-
-err:
-    cdev_del(&_prvDevData->_cdev);
-out:
-    return res;
+    printk("from probe function\n");
+    return 0;
 }
 
 int removeCBF (struct platform_device* platResource)
 {   
-    /* extracting device private data from passed device pointer */
-    struct platform_device_private_data* _prvDevData = platform_get_drvdata(platResource);
-
-    /* destroy the created platform device */
-    device_destroy(_prvtDrvData->_class, _prvtDrvData->devNum + platResource->id);
-
-    /* delete the created character device */
-    cdev_del(&(_prvDevData->_cdev));
-
-    /* NOTE: move it to close */
-    // kfree(_lc_gpio->allocatedMem);
-
-    /* logging */
-    printk("Device Removed! \n");
-
+    printk("from remove function\n");
     return 0;
 }
+
+struct myprivateData {
+    int a;
+    int b;
+};
+struct myprivateData element;
+
+const struct of_device_id mydeviceId = {
+    .compatible = "LED_AQUA",
+    .data = &element,
+    .name = "my led device",
+    .type = "character"
+};
 
 /* platform driver instance */
 struct platform_driver _platDriver = 
 {
     .probe = probeCBF, /*probe callback function*/
     .remove = removeCBF, /* remove callback function */
-    .id_table = _id_table, /* pointer to id table */
     .driver = {
         .name = DRIVER_NAME, /* name of driver */
-        .owner = THIS_MODULE /* owner of this driver */
+        .owner = THIS_MODULE /* owner of this driver */,
+        .of_match_table = &mydeviceId
     }
 };
 
@@ -307,6 +206,7 @@ static int __init gpioDriv_init(void)
 {
     int res = 0;
 
+    
     /* allocate memory for private driver data and initialize it to 0 */
     _prvtDrvData = kzalloc(sizeof(struct platform_driver_private_data), GFP_KERNEL);
     if (!_prvtDrvData)

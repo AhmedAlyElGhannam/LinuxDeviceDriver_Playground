@@ -44,6 +44,13 @@ sudo insmod module.ko var_name=5
 #define S_IROTH 00004
 #define S_IWOTH 00002
 #define S_IXOTH 00001
+
+
+#define S_IRWXUGO	(S_IRWXU|S_IRWXG|S_IRWXO)
+#define S_IALLUGO	(S_ISUID|S_ISGID|S_ISVTX|S_IRWXUGO)
+#define S_IRUGO		(S_IRUSR|S_IRGRP|S_IROTH)
+#define S_IWUGO		(S_IWUSR|S_IWGRP|S_IWOTH)
+#define S_IXUGO		(S_IXUSR|S_IXGRP|S_IXOTH)
 ```
 
 > command to know info about a module
@@ -252,4 +259,38 @@ return res;
 #define	EPIPE		32	/* Broken pipe */
 #define	EDOM		33	/* Math argument out of domain of func */
 #define	ERANGE		34	/* Math result not representable */
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1. class_create
+1. device_create
+1. device_create_file
+
+
+
+
+```c
+
+/*
+
+    dir containing 2 attr -> 2 files: direction & value
+
+*/
+
 ```
